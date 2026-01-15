@@ -14,50 +14,91 @@ public static class DatabaseInitializer
         connection.Open();
         using var command = connection.CreateCommand();
         command.CommandText = @"
-        CREATE TABLE IF NOT EXISTS Claims (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            point TEXT NOT NULL,
-            type TEXT NOT NULL,
-            category TEXT NOT NULL,
-            legislation TEXT NOT NULL,
-            respondent TEXT NOT NULL,
-            evidence_rating INTEGER NOT NULL
-        );
         CREATE TABLE IF NOT EXISTS Types (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id CHAR(1) PRIMARY KEY,        -- e.g., 'A', 'B', 'C'
             name TEXT NOT NULL UNIQUE
         );
+
         CREATE TABLE IF NOT EXISTS Categories (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id CHAR(1) PRIMARY KEY,        -- e.g., 'A', 'B', 'C'
             name TEXT NOT NULL UNIQUE
         );
+
+        CREATE TABLE IF NOT EXISTS Respondents (
+            id CHAR(1) PRIMARY KEY,        -- e.g., 'A', 'B', 'C'
+            name TEXT NOT NULL UNIQUE
+        );
+
         CREATE TABLE IF NOT EXISTS Legislation (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL UNIQUE
         );
-        CREATE TABLE IF NOT EXISTS Respondents (
+
+        -- ============================
+        --  Evidence Table
+        -- ============================
+
+        CREATE TABLE IF NOT EXISTS Evidence (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL UNIQUE
+            title TEXT NOT NULL,
+            file_path TEXT NOT NULL,
+            type TEXT NOT NULL,            -- e.g., 'bundle', 'document', 'pdf'
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         );
-        INSERT OR IGNORE INTO Types (name) VALUES
-        ('Medical negligence'),
-        ('Munchausen by proxy'),
-        ('DLA fraud');
-        INSERT OR IGNORE INTO Categories (name) VALUES
-        ('fraud'),
-        ('medical'),
-        ('civil'),
-        ('family');
+
+        -- ============================
+        --  Claims Table (Updated)
+        -- ============================
+
+        CREATE TABLE IF NOT EXISTS Claims (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+            point TEXT NOT NULL,
+
+            -- Multi-select fields stored as strings like 'ABC'
+            type TEXT NOT NULL,            -- references Types.id values
+            category TEXT NOT NULL,        -- references Categories.id values
+            legislation TEXT NOT NULL,     -- unchanged
+            respondent TEXT NOT NULL,      -- references Respondents.id values
+
+            evidence_rating INTEGER NOT NULL,
+
+            -- Evidence linking
+            evidence_id INTEGER,                 -- FK to Evidence
+            evidence_page INTEGER,               -- page number
+            evidence_location_text TEXT,         -- short description
+
+            FOREIGN KEY (evidence_id) REFERENCES Evidence(id)
+        );
+        
+        -- ============================
+        --  Testing
+        -- ============================
+
+        -- NOTE. code will need to handle alphabetic IDs for multi-select fields
+
+        INSERT INTO Types (id, name) VALUES
+        ('A', 'DLA fraud'),
+        ('B', 'Medical negligence'),
+        ('C', 'Munchausen by proxy');
+
+        INSERT INTO Categories (id, name) VALUES
+        ('A', 'civil'),
+        ('B', 'family'),
+        ('C', 'fraud'),
+        ('D', 'medical');
+
         INSERT OR IGNORE INTO Legislation (name) VALUES
         ('Fraud Act 2006'),
         ('Mental Capacity Act 2005'),
         ('Children Act 1989'),
         ('Civil Procedure Rules');
-        INSERT OR IGNORE INTO Respondents (name) VALUES
-        ('Angie Samuel'),
-        ('Lisa Jenkins'),
-        ('Judge Hanslip'),
-        ('Dr Camel');
+
+        INSERT INTO Respondents (id, name) VALUES
+        ('A', 'Angie Samuel'),
+        ('B', 'Dr Camel'),
+        ('C', 'Judge Hanslip'),
+        ('D', 'Lisa Jenkins');
         ";
         command.ExecuteNonQuery();
     }
