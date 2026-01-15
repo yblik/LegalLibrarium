@@ -1,5 +1,6 @@
 ﻿using Microsoft.Data.Sqlite;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Windows.Forms;
 
@@ -7,16 +8,20 @@ public class ClaimEntryForm : Form
 {
     private TextBox txtPoint;
 
-    private CheckedListBox listTypes;
-    private CheckedListBox listCategories;
+    private ComboBox comboTypes;
+    private ComboBox comboCategories;
+    private ComboBox comboRespondents;
     private ComboBox comboLegislation;
-    private CheckedListBox listRespondents;
+    private ComboBox comboEvidence;
+
+    private readonly List<string> selectedTypes = new();
+    private readonly List<string> selectedCategories = new();
+    private readonly List<string> selectedRespondents = new();
 
     private TrackBar trackEvidence;
     private Label lblEvidenceValue;
     private Button btnAdd;
 
-    private ComboBox comboEvidence;
     private NumericUpDown numEvidencePage;
     private TextBox txtEvidenceLocation;
 
@@ -25,8 +30,8 @@ public class ClaimEntryForm : Form
     public ClaimEntryForm()
     {
         Text = "Claim Entry";
-        Width = 600;
-        Height = 700;
+        Width = 700;
+        Height = 650;
         StartPosition = FormStartPosition.CenterScreen;
 
         BuildUI();
@@ -35,111 +40,111 @@ public class ClaimEntryForm : Form
 
     private void BuildUI()
     {
-        var lblPoint = new Label { Left = 20, Top = 20, Text = "Point:", Width = 120 };
-        txtPoint = new TextBox { Left = 150, Top = 18, Width = 400 };
+        Controls.Add(new Label { Left = 20, Top = 20, Text = "Point:" });
+        txtPoint = new TextBox { Left = 150, Top = 18, Width = 500 };
+        Controls.Add(txtPoint);
 
-        var lblType = new Label { Left = 20, Top = 60, Text = "Types:", Width = 120 };
-        listTypes = new CheckedListBox { Left = 150, Top = 58, Width = 200, Height = 100 };
+        comboTypes = BuildMultiSelect("Types:", 60, selectedTypes);
+        comboCategories = BuildMultiSelect("Categories:", 100, selectedCategories);
+        comboRespondents = BuildMultiSelect("Respondents:", 140, selectedRespondents);
 
-        var lblCategory = new Label { Left = 20, Top = 170, Text = "Categories:", Width = 120 };
-        listCategories = new CheckedListBox { Left = 150, Top = 168, Width = 200, Height = 100 };
+        Controls.Add(new Label { Left = 20, Top = 180, Text = "Legislation:" });
+        comboLegislation = new ComboBox
+        {
+            Left = 150,
+            Top = 178,
+            Width = 300,
+            DropDownStyle = ComboBoxStyle.DropDownList
+        };
+        Controls.Add(comboLegislation);
 
-        var lblLegislation = new Label { Left = 20, Top = 280, Text = "Legislation:", Width = 120 };
-        comboLegislation = new ComboBox { Left = 150, Top = 278, Width = 200, DropDownStyle = ComboBoxStyle.DropDownList };
-
-        var lblRespondent = new Label { Left = 20, Top = 320, Text = "Respondents:", Width = 120 };
-        listRespondents = new CheckedListBox { Left = 150, Top = 318, Width = 200, Height = 100 };
-
-        var lblEvidence = new Label { Left = 20, Top = 430, Text = "Evidence rating:", Width = 120 };
-
-        var lblEvidenceItem = new Label { Left = 20, Top = 470, Text = "Evidence item:", Width = 120 };
-        comboEvidence = new ComboBox { Left = 150, Top = 468, Width = 300, DropDownStyle = ComboBoxStyle.DropDownList };
-
-        var lblEvidencePage = new Label { Left = 20, Top = 510, Text = "Page number:", Width = 120 };
-        numEvidencePage = new NumericUpDown { Left = 150, Top = 508, Width = 80, Minimum = 0, Maximum = 9999 };
-
-        var lblEvidenceLocation = new Label { Left = 20, Top = 550, Text = "Location text:", Width = 120 };
-        txtEvidenceLocation = new TextBox { Left = 150, Top = 548, Width = 300 };
-
+        Controls.Add(new Label { Left = 20, Top = 220, Text = "Evidence rating:" });
         trackEvidence = new TrackBar
         {
             Left = 150,
-            Top = 425,
+            Top = 215,
             Width = 200,
             Minimum = 0,
             Maximum = 10,
-            TickFrequency = 1,
             Value = 5
         };
         trackEvidence.Scroll += (s, e) => lblEvidenceValue.Text = trackEvidence.Value.ToString();
-        lblEvidenceValue = new Label { Left = 360, Top = 430, Width = 50, Text = "5" };
+        Controls.Add(trackEvidence);
 
+        lblEvidenceValue = new Label { Left = 360, Top = 220, Text = "5" };
+        Controls.Add(lblEvidenceValue);
+
+        Controls.Add(new Label { Left = 20, Top = 260, Text = "Evidence item:" });
+        comboEvidence = new ComboBox
+        {
+            Left = 150,
+            Top = 258,
+            Width = 400,
+            DropDownStyle = ComboBoxStyle.DropDownList
+        };
+        Controls.Add(comboEvidence);
+
+        Controls.Add(new Label { Left = 20, Top = 300, Text = "Page number:" });
+        numEvidencePage = new NumericUpDown { Left = 150, Top = 298, Width = 80 };
+        Controls.Add(numEvidencePage);
+
+        Controls.Add(new Label { Left = 20, Top = 340, Text = "Location text:" });
+        txtEvidenceLocation = new TextBox { Left = 150, Top = 338, Width = 400 };
+        Controls.Add(txtEvidenceLocation);
 
         btnAdd = new Button
         {
             Left = 20,
-            Top = 620, //lower (from 500)
+            Top = 380,
             Width = 150,
             Text = "Add Claim"
         };
         btnAdd.Click += BtnAdd_Click;
-
-        Controls.Add(lblPoint);
-        Controls.Add(txtPoint);
-        Controls.Add(lblType);
-        Controls.Add(listTypes);
-        Controls.Add(lblCategory);
-        Controls.Add(listCategories);
-        Controls.Add(lblLegislation);
-        Controls.Add(comboLegislation);
-        Controls.Add(lblRespondent);
-        Controls.Add(listRespondents);
-        Controls.Add(lblEvidence);
-        Controls.Add(trackEvidence);
-        Controls.Add(lblEvidenceValue);
         Controls.Add(btnAdd);
-        Controls.Add(lblEvidenceItem);
-        Controls.Add(comboEvidence);
-        Controls.Add(lblEvidencePage);
-        Controls.Add(numEvidencePage);
-        Controls.Add(lblEvidenceLocation);
-        Controls.Add(txtEvidenceLocation);
+    }
+
+    private ComboBox BuildMultiSelect(string label, int top, List<string> store)
+    {
+        Controls.Add(new Label { Left = 20, Top = top, Text = label });
+
+        var combo = new ComboBox
+        {
+            Left = 150,
+            Top = top - 2,
+            Width = 500,
+            DropDownStyle = ComboBoxStyle.DropDownList
+        };
+
+        combo.SelectionChangeCommitted += (s, e) =>
+        {
+            if (combo.SelectedIndex <= 0) return;
+
+            string value = combo.SelectedItem.ToString();
+            store.Add(value);
+            combo.Items.Remove(value);
+            combo.Text = string.Join(", ", store);
+            combo.SelectedIndex = 0;
+        };
+
+        Controls.Add(combo);
+        return combo;
     }
 
     private void LoadDropdowns()
     {
-        LoadCheckedList("SELECT id, name FROM Types ORDER BY id", listTypes);
-        LoadCheckedList("SELECT id, name FROM Categories ORDER BY id", listCategories);
-        LoadCheckedList("SELECT id, name FROM Respondents ORDER BY id", listRespondents);
+        LoadMultiSelectCombo("SELECT id, name FROM Types ORDER BY id", comboTypes, "-- select type --");
+        LoadMultiSelectCombo("SELECT id, name FROM Categories ORDER BY id", comboCategories, "-- select category --");
+        LoadMultiSelectCombo("SELECT id, name FROM Respondents ORDER BY id", comboRespondents, "-- select respondent --");
 
         LoadCombo("SELECT name FROM Legislation ORDER BY name", comboLegislation);
         LoadEvidence();
     }
 
-    private void LoadEvidence()
+    private void LoadMultiSelectCombo(string sql, ComboBox combo, string placeholder)
     {
-        comboEvidence.Items.Clear();
-
-        using var conn = new SqliteConnection(ConnectionString);
-        conn.Open();
-
-        using var cmd = new SqliteCommand("SELECT id, title FROM Evidence ORDER BY id", conn);
-        using var reader = cmd.ExecuteReader();
-
-        while (reader.Read())
-        {
-            int id = reader.GetInt32(0);
-            string title = reader.GetString(1);
-
-            comboEvidence.Items.Add(new { Id = id, Title = title });
-        }
-
-        comboEvidence.DisplayMember = "Title";
-        comboEvidence.ValueMember = "Id";
-    }
-    private void LoadCheckedList(string sql, CheckedListBox list)
-    {
-        list.Items.Clear();
+        combo.Items.Clear();
+        combo.Items.Add(placeholder);
+        combo.SelectedIndex = 0;
 
         using var conn = new SqliteConnection(ConnectionString);
         conn.Open();
@@ -148,15 +153,7 @@ public class ClaimEntryForm : Form
         using var reader = cmd.ExecuteReader();
 
         while (reader.Read())
-        {
-            if (reader.IsDBNull(0) || reader.IsDBNull(1))
-                continue; // skip bad rows
-
-            string id = reader.GetString(0);
-            string name = reader.GetString(1);
-
-            list.Items.Add($"{id} - {name}");
-        }
+            combo.Items.Add($"{reader.GetString(0)} - {reader.GetString(1)}");
     }
 
     private void LoadCombo(string sql, ComboBox combo)
@@ -176,37 +173,33 @@ public class ClaimEntryForm : Form
             combo.SelectedIndex = 0;
     }
 
-    private string BuildMultiSelectString(CheckedListBox list)
+    private void LoadEvidence()
     {
-        return string.Concat(
-            list.CheckedItems
-                .Cast<string>()
-                .Select(item => item.Substring(0, 1)) // extract CHAR(1)
-                .OrderBy(c => c)
-        );
+        comboEvidence.Items.Clear();
+
+        using var conn = new SqliteConnection(ConnectionString);
+        conn.Open();
+
+        using var cmd = new SqliteCommand("SELECT id, title FROM Evidence ORDER BY id", conn);
+        using var reader = cmd.ExecuteReader();
+
+        while (reader.Read())
+            comboEvidence.Items.Add(new { Id = reader.GetInt32(0), Title = reader.GetString(1) });
+
+        comboEvidence.DisplayMember = "Title";
+        comboEvidence.ValueMember = "Id";
+    }
+
+    private string BuildMultiSelectString(List<string> values)
+    {
+        return string.Concat(values.Select(v => v.Substring(0, 1)).OrderBy(c => c));
     }
 
     private void BtnAdd_Click(object sender, EventArgs e)
     {
-        if (string.IsNullOrWhiteSpace(txtPoint.Text))
+        if (!selectedTypes.Any() || !selectedCategories.Any() || !selectedRespondents.Any())
         {
-            MessageBox.Show("Point is required.");
-            return;
-        }
-
-        if (comboLegislation.SelectedItem == null)
-        {
-            MessageBox.Show("Legislation must be selected.");
-            return;
-        }
-
-        string typeStr = BuildMultiSelectString(listTypes);
-        string categoryStr = BuildMultiSelectString(listCategories);
-        string respondentStr = BuildMultiSelectString(listRespondents);
-
-        if (typeStr.Length == 0 || categoryStr.Length == 0 || respondentStr.Length == 0)
-        {
-            MessageBox.Show("You must select at least one Type, Category, and Respondent.");
+            MessageBox.Show("Select at least one Type, Category, and Respondent.");
             return;
         }
 
@@ -215,39 +208,25 @@ public class ClaimEntryForm : Form
 
         using var cmd = conn.CreateCommand();
         cmd.CommandText = @"
-            INSERT INTO Claims 
-                (point, type, category, legislation, respondent, evidence_rating,
-                 evidence_id, evidence_page, evidence_location_text)
-            VALUES 
-                ($p, $t, $c, $l, $r, $e,
-                 $eid, $ep, $el);
-        ";
+            INSERT INTO Claims
+            (point, type, category, legislation, respondent, evidence_rating,
+             evidence_id, evidence_page, evidence_location_text)
+            VALUES
+            ($p, $t, $c, $l, $r, $e, $eid, $ep, $el);";
 
         cmd.Parameters.AddWithValue("$p", txtPoint.Text.Trim());
-        cmd.Parameters.AddWithValue("$t", typeStr);
-        cmd.Parameters.AddWithValue("$c", categoryStr);
-        cmd.Parameters.AddWithValue("$l", comboLegislation.SelectedItem.ToString());
-        cmd.Parameters.AddWithValue("$r", respondentStr);
+        cmd.Parameters.AddWithValue("$t", BuildMultiSelectString(selectedTypes));
+        cmd.Parameters.AddWithValue("$c", BuildMultiSelectString(selectedCategories));
+        cmd.Parameters.AddWithValue("$l", comboLegislation.SelectedItem?.ToString());
+        cmd.Parameters.AddWithValue("$r", BuildMultiSelectString(selectedRespondents));
         cmd.Parameters.AddWithValue("$e", trackEvidence.Value);
-
-        cmd.Parameters.AddWithValue("$eid", comboEvidence.SelectedItem == null
-            ? DBNull.Value
-            : (comboEvidence.SelectedItem as dynamic).Id);
-
+        cmd.Parameters.AddWithValue("$eid", comboEvidence.SelectedItem == null ? DBNull.Value : (comboEvidence.SelectedItem as dynamic).Id);
         cmd.Parameters.AddWithValue("$ep", numEvidencePage.Value);
         cmd.Parameters.AddWithValue("$el", txtEvidenceLocation.Text.Trim());
 
-
         cmd.ExecuteNonQuery();
 
-        MessageBox.Show("Claim added to database.");
-
-        txtPoint.Clear();
-        trackEvidence.Value = 5;
-        lblEvidenceValue.Text = "5";
-
-        foreach (int i in listTypes.CheckedIndices) listTypes.SetItemChecked(i, false);
-        foreach (int i in listCategories.CheckedIndices) listCategories.SetItemChecked(i, false);
-        foreach (int i in listRespondents.CheckedIndices) listRespondents.SetItemChecked(i, false);
+        MessageBox.Show("Claim added.");
+        Close();
     }
 }

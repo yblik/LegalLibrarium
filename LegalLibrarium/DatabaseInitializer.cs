@@ -77,12 +77,12 @@ public static class DatabaseInitializer
 
         -- NOTE. code will need to handle alphabetic IDs for multi-select fields
 
-        INSERT INTO Types (id, name) VALUES
+        INSERT OR IGNORE INTO Types (id, name) VALUES
         ('A', 'DLA fraud'),
         ('B', 'Medical negligence'),
         ('C', 'Munchausen by proxy');
 
-        INSERT INTO Categories (id, name) VALUES
+        INSERT OR IGNORE INTO Categories (id, name) VALUES
         ('A', 'civil'),
         ('B', 'family'),
         ('C', 'fraud'),
@@ -94,7 +94,7 @@ public static class DatabaseInitializer
         ('Children Act 1989'),
         ('Civil Procedure Rules');
 
-        INSERT INTO Respondents (id, name) VALUES
+        INSERT OR IGNORE INTO Respondents (id, name) VALUES
         ('A', 'Angie Samuel'),
         ('B', 'Dr Camel'),
         ('C', 'Judge Hanslip'),
