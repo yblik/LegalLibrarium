@@ -1,4 +1,5 @@
 ﻿using Microsoft.Data.Sqlite;
+using System.Collections.Generic;
 using System.Windows.Forms;
 
 public static class LookupLoader
@@ -8,7 +9,7 @@ public static class LookupLoader
         MultiSelectCombo multi,
         string placeholder)
     {
-        multi.Reset(placeholder);
+        var items = new List<string>();
 
         using var conn = new SqliteConnection(DbConfig.ConnectionString);
         conn.Open();
@@ -17,7 +18,9 @@ public static class LookupLoader
         using var reader = cmd.ExecuteReader();
 
         while (reader.Read())
-            multi.Combo.Items.Add($"{reader.GetInt32(0)} - {reader.GetString(1)}");
+            items.Add(reader.GetString(1)); // name column
+
+        multi.LoadItems(items, placeholder);
     }
 
     public static void LoadCombo(string sql, ComboBox combo)
@@ -53,8 +56,7 @@ public static class LookupLoader
         while (reader.Read())
             combo.Items.Add(new EvidenceItem(
                 reader.GetInt32(0),
-                reader.GetString(1)
-            ));
+                reader.GetString(1)));
 
         combo.DisplayMember = nameof(EvidenceItem.Title);
         combo.ValueMember = nameof(EvidenceItem.Id);

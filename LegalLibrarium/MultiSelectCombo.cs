@@ -6,7 +6,11 @@ using System.Windows.Forms;
 public sealed class MultiSelectCombo
 {
     public ComboBox Combo { get; }
-    public List<string> Selected { get; } = new();
+
+    private readonly List<string> _originalOrder = new();
+    private readonly List<string> _selected = new();
+
+    public bool HasSelection => _selected.Count > 0;
 
     public MultiSelectCombo(Control parent, string labelText, int top)
     {
@@ -26,37 +30,53 @@ public sealed class MultiSelectCombo
             DropDownStyle = ComboBoxStyle.DropDownList
         };
 
-        Combo.SelectionChangeCommitted += HandleSelect;
+        Combo.SelectionChangeCommitted += OnSelect;
         parent.Controls.Add(Combo);
     }
 
-    private void HandleSelect(object? sender, EventArgs e)
+    /* called by LookupLoader */
+    public void LoadItems(IEnumerable<string> items, string placeholder)
     {
-        if (Combo.SelectedIndex <= 0) return;
+        _originalOrder.Clear();
+        _originalOrder.AddRange(items);
 
-        string value = Combo.SelectedItem!.ToString()!;
-        Selected.Add(value);
-        Combo.Items.Remove(value);
-        Combo.Text = string.Join(", ", Selected);
-        Combo.SelectedIndex = 0;
-    }
+        _selected.Clear();
 
-    public void Reset(string placeholder)
-    {
-        Selected.Clear();
         Combo.Items.Clear();
         Combo.Items.Add(placeholder);
+
+        foreach (var item in _originalOrder)
+            Combo.Items.Add(item);
+
         Combo.SelectedIndex = 0;
     }
 
+    /* used by ClaimEntryForm.Save() */
     public string ToCodeString()
     {
+        // A = first item, B = second, etc
         return string.Concat(
-            Selected
-                .Select(v => v.Substring(0, 1))
+            _selected
+                .Select(v => (char)('A' + _originalOrder.IndexOf(v)))
                 .OrderBy(c => c)
         );
     }
 
-    public bool HasSelection => Selected.Count > 0;
+    private void OnSelect(object? sender, EventArgs e)
+    {
+        if (Combo.SelectedIndex <= 0)
+            return;
+
+        string value = Combo.SelectedItem!.ToString()!;
+
+        if (_selected.Contains(value))
+            return;
+
+        _selected.Add(value);
+
+        // remove from possible future selection
+        Combo.Items.Remove(value);
+
+        Combo.SelectedIndex = 0;
+    }
 }
