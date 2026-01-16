@@ -38,7 +38,7 @@ public sealed class ClaimEntryForm : EntryFormBase
         txtPoint = new TextBox { Left = 150, Top = Y - 22, Width = 500 };
         Controls.Add(txtPoint);
 
-        types = new MultiSelectCombo(this, "Types:", NextRow());
+        //types = new MultiSelectCombo(this, "Types:", NextRow());
         categories = new MultiSelectCombo(this, "Categories:", NextRow());
         respondents = new MultiSelectCombo(this, "Respondents:", NextRow());
 
@@ -116,10 +116,10 @@ public sealed class ClaimEntryForm : EntryFormBase
 
     protected override void LoadData()
     {
-        LookupLoader.LoadMultiSelect(
-            "SELECT id, name FROM Types ORDER BY id",
-            types,
-            "-- select type --");
+        //LookupLoader.LoadMultiSelect(
+        //    "SELECT id, name FROM Types ORDER BY id",
+        //    types,
+        //    "-- select type --");
 
         LookupLoader.LoadMultiSelect(
             "SELECT id, name FROM Categories ORDER BY id",
@@ -140,11 +140,10 @@ public sealed class ClaimEntryForm : EntryFormBase
 
     protected override bool ValidateForm()
     {
-        if (!types.HasSelection ||
-            !categories.HasSelection ||
+        if (!categories.HasSelection ||
             !respondents.HasSelection)
         {
-            MessageBox.Show("Select at least one Type, Category, and Respondent.");
+            MessageBox.Show("Select at least one Point, Category, and Respondent.");
             return false;
         }
 

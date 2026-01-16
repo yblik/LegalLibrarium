@@ -14,11 +14,6 @@ public static class DatabaseInitializer
         connection.Open();
         using var command = connection.CreateCommand();
         command.CommandText = @"
-        CREATE TABLE IF NOT EXISTS Types (
-            id CHAR(1) PRIMARY KEY,        -- e.g., 'A', 'B', 'C'
-            name TEXT NOT NULL UNIQUE
-        );
-
         CREATE TABLE IF NOT EXISTS Categories (
             id CHAR(1) PRIMARY KEY,        -- e.g., 'A', 'B', 'C'
             name TEXT NOT NULL UNIQUE
@@ -56,7 +51,6 @@ public static class DatabaseInitializer
             point TEXT NOT NULL,
 
             -- Multi-select fields stored as strings like 'ABC'
-            type TEXT NOT NULL,            -- references Types.id values
             category TEXT NOT NULL,        -- references Categories.id values
             legislation TEXT NOT NULL,     -- unchanged
             respondent TEXT NOT NULL,      -- references Respondents.id values
@@ -76,11 +70,6 @@ public static class DatabaseInitializer
         -- ============================
 
         -- NOTE. code will need to handle alphabetic IDs for multi-select fields
-
-        INSERT OR IGNORE INTO Types (id, name) VALUES
-        ('A', 'DLA fraud'),
-        ('B', 'Medical negligence'),
-        ('C', 'Munchausen by proxy');
 
         INSERT OR IGNORE INTO Categories (id, name) VALUES
         ('A', 'civil'),

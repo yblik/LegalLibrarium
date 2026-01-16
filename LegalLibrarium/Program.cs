@@ -8,7 +8,9 @@ internal static class Program
     {
         Application.EnableVisualStyles();
         Application.SetCompatibleTextRenderingDefault(false);
+
         DatabaseInitializer.Initialize();
-        Application.Run(new ClaimEntryForm());
+
+        Application.Run(new EntryMenuForm());
     }
 }

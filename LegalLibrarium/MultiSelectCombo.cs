@@ -5,78 +5,106 @@ using System.Windows.Forms;
 
 public sealed class MultiSelectCombo
 {
-    public ComboBox Combo { get; }
+    private readonly ComboBox combo;
+    private readonly List<(int Id, string Name)> available = new();
+    private readonly List<(int Id, string Name)> selected = new();
 
-    private readonly List<string> _originalOrder = new();
-    private readonly List<string> _selected = new();
+    public bool HasSelection => selected.Count > 0;
 
-    public bool HasSelection => _selected.Count > 0;
-
-    public MultiSelectCombo(Control parent, string labelText, int top)
+    public MultiSelectCombo(Form parent, string label, int top)
     {
         parent.Controls.Add(new Label
         {
             Left = 20,
             Top = top,
-            Text = labelText,
-            AutoSize = true
+            Text = label
         });
 
-        Combo = new ComboBox
+        combo = new ComboBox
         {
             Left = 150,
-            Top = top - 2,
-            Width = 500,
+            Top = top - 22,
+            Width = 400,
             DropDownStyle = ComboBoxStyle.DropDownList
         };
 
-        Combo.SelectionChangeCommitted += OnSelect;
-        parent.Controls.Add(Combo);
+        combo.SelectedIndexChanged += OnSelected;
+        parent.Controls.Add(combo);
     }
 
-    /* called by LookupLoader */
+    public void Load(IEnumerable<(int Id, string Name)> values, string placeholder)
+    {
+        available.Clear();
+        selected.Clear();
+
+        available.AddRange(values);
+
+        RefreshCombo(placeholder);
+    }
     public void LoadItems(IEnumerable<string> items, string placeholder)
     {
-        _originalOrder.Clear();
-        _originalOrder.AddRange(items);
-
-        _selected.Clear();
-
-        Combo.Items.Clear();
-        Combo.Items.Add(placeholder);
-
-        foreach (var item in _originalOrder)
-            Combo.Items.Add(item);
-
-        Combo.SelectedIndex = 0;
+        Load(items.Select((name, idx) => (Id: idx, Name: name)), placeholder);
     }
 
-    /* used by ClaimEntryForm.Save() */
+
+    private void OnSelected(object sender, EventArgs e)
+    {
+        if (combo.SelectedItem is not string text)
+            return;
+
+        var match = available.FirstOrDefault(v => v.Name == text);
+        if (match == default)
+            return;
+
+        available.Remove(match);
+        selected.Add(match);
+
+        RefreshCombo("-- select another --");
+    }
+
+    private void RefreshCombo(string placeholder)
+    {
+        combo.BeginUpdate();
+        combo.Items.Clear();
+
+        // selected items at the TOP
+        foreach (var s in selected)
+            combo.Items.Add($"✔ {s.Name}");
+
+        if (combo.Items.Count > 0)
+            combo.Items.Add("──────────");
+
+        foreach (var a in available)
+            combo.Items.Add(a.Name);
+
+        if (combo.Items.Count == 0)
+            combo.Items.Add(placeholder);
+
+        combo.SelectedIndex = -1;
+        combo.EndUpdate();
+    }
+
     public string ToCodeString()
     {
-        // A = first item, B = second, etc
         return string.Concat(
-            _selected
-                .Select(v => (char)('A' + _originalOrder.IndexOf(v)))
-                .OrderBy(c => c)
+            selected
+                .OrderBy(s => s.Name)
+                .Select((_, i) => ToAlphaCode(i))
         );
     }
 
-    private void OnSelect(object? sender, EventArgs e)
+    private static string ToAlphaCode(int index)
     {
-        if (Combo.SelectedIndex <= 0)
-            return;
+        string code = "";
+        index++;
 
-        string value = Combo.SelectedItem!.ToString()!;
+        while (index > 0)
+        {
+            index--;
+            code = (char)('A' + (index % 26)) + code;
+            index /= 26;
+        }
 
-        if (_selected.Contains(value))
-            return;
-
-        _selected.Add(value);
-
-        // remove from possible future selection
-        Combo.Items.Remove(value);
-
-        Combo.SelectedIndex = 0;
+        return code;
     }
 }
