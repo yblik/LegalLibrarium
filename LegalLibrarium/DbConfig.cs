@@ -1,4 +1,4 @@
 ﻿public static class DbConfig
 {
-    public const string ConnectionString = "Data Source=case.db";
+    public const string ConnectionString = "Data Source=case_timeline.db";
 }
