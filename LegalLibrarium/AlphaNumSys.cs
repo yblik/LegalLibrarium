@@ -1,6 +1,6 @@
 ﻿using System;
 
-public static class AlphaNum2
+public static class AlphaNumSys
 {
     private const string Letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 

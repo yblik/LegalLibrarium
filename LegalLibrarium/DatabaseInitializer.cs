@@ -15,8 +15,12 @@ public static class DatabaseInitializer
         using var command = connection.CreateCommand();
         // the auto index values are to be converted to alphabetic IDs in the application logic then from that
         command.CommandText = @"
+            CREATE TABLE IF NOT EXISTS Categories (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL UNIQUE
+            );  
             CREATE TABLE IF NOT EXISTS Respondents (
-                id CHAR(1) PRIMARY KEY,        -- e.g., 'A1-9', 'B1-9', 'C1-9'
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
                 name TEXT NOT NULL UNIQUE
             );
 
@@ -67,11 +71,11 @@ public static class DatabaseInitializer
 
             -- NOTE. code will need to handle alphabetic IDs for multi-select fields
 
-            INSERT OR IGNORE INTO Categories (id, name) VALUES
-            ('1', 'civil'),
-            ('2', 'family'),
-            ('3', 'fraud'),
-            ('4', 'medical');
+            INSERT OR IGNORE INTO Categories (name) VALUES
+            ('civil'),
+            ('family'),
+            ('fraud'),
+            ('medical');
 
             INSERT OR IGNORE INTO Legislation (name) VALUES
             ('Fraud Act 2006'),
@@ -79,11 +83,11 @@ public static class DatabaseInitializer
             ('Children Act 1989'),
             ('Civil Procedure Rules');
 
-            INSERT OR IGNORE INTO Respondents (id, name) VALUES
-            ('A', 'Angie Samuel'),
-            ('B', 'Dr Camel'),
-            ('C', 'Judge Hanslip'),
-            ('D', 'Lisa Jenkins');
+            INSERT OR IGNORE INTO Respondents (name) VALUES
+            ('Angie Samuel'),
+            ('Dr Camel'),
+            ('Judge Hanslip'),
+            ('Lisa Jenkins');
             ";
     command.ExecuteNonQuery();
     }

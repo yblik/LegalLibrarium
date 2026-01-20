@@ -1,29 +1,37 @@
 ﻿using Microsoft.Data.Sqlite;
-using System.Collections.Generic;
+using System.Data;
 using System.Windows.Forms;
 
 public static class LookupLoader
 {
-    public static void LoadMultiSelect(
-        string sql,
-        MultiSelectCombo multi,
-        string placeholder)
+    // =========================
+    // GENERIC TABLE LOADER
+    // =========================
+    public static DataTable LoadTable(string sql)
     {
-        var items = new List<string>();
-
         using var conn = new SqliteConnection(DbConfig.ConnectionString);
-        conn.Open();
-
         using var cmd = new SqliteCommand(sql, conn);
-        using var reader = cmd.ExecuteReader();
 
-        while (reader.Read())
-            items.Add(reader.GetString(1)); // name column
-
-        multi.LoadItems(items, placeholder);
+        var table = new DataTable();
+        return table;
     }
 
-    public static void LoadCombo(string sql, ComboBox combo)
+    // =========================
+    // MULTI-SELECT DROPDOWN
+    // =========================
+    public static void LoadMultiSelect(
+        string sql,
+        MultiSelectDropdown dropdown)
+    {
+        dropdown.Load(LoadTable(sql));
+    }
+
+    // =========================
+    // STANDARD COMBOBOX
+    // =========================
+    public static void LoadCombo(
+        string sql,
+        ComboBox combo)
     {
         combo.Items.Clear();
 
@@ -40,6 +48,9 @@ public static class LookupLoader
             combo.SelectedIndex = 0;
     }
 
+    // =========================
+    // EVIDENCE COMBO
+    // =========================
     public static void LoadEvidence(ComboBox combo)
     {
         combo.Items.Clear();
@@ -54,11 +65,16 @@ public static class LookupLoader
         using var reader = cmd.ExecuteReader();
 
         while (reader.Read())
+        {
             combo.Items.Add(new EvidenceItem(
                 reader.GetInt32(0),
                 reader.GetString(1)));
+        }
 
         combo.DisplayMember = nameof(EvidenceItem.Title);
         combo.ValueMember = nameof(EvidenceItem.Id);
+
+        if (combo.Items.Count > 0)
+            combo.SelectedIndex = 0;
     }
 }

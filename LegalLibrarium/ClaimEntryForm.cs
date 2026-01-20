@@ -1,13 +1,14 @@
 ﻿using Microsoft.Data.Sqlite;
 using System;
+using System.Data;
 using System.Windows.Forms;
 
 public sealed class ClaimEntryForm : EntryFormBase
 {
     private TextBox txtPoint;
 
-    private MultiSelectCombo categories;
-    private MultiSelectCombo respondents;
+    private MultiSelectDropdown categories;
+    private MultiSelectDropdown respondents;
 
     private ComboBox comboLegislation;
     private ComboBox comboEvidence;
@@ -37,8 +38,9 @@ public sealed class ClaimEntryForm : EntryFormBase
         txtPoint = new TextBox { Left = 150, Top = Y - 22, Width = 500 };
         Controls.Add(txtPoint);
 
-        categories = new MultiSelectCombo(this, "Categories:", NextRow());
-        respondents = new MultiSelectCombo(this, "Respondents:", NextRow());
+        categories = new MultiSelectDropdown(this, "Categories:", NextRow());
+        respondents = new MultiSelectDropdown(this, "Respondents:", NextRow());
+
 
         Controls.Add(new Label { Left = 20, Top = NextRow(), Text = "Legislation:" });
         comboLegislation = new ComboBox
@@ -114,15 +116,11 @@ public sealed class ClaimEntryForm : EntryFormBase
 
     protected override void LoadData()
     {
-        LookupLoader.LoadMultiSelect(
-            "SELECT id, name FROM Categories ORDER BY id",
-            categories,
-            "-- select category --");
+        categories.Load(
+            LookupLoader.LoadTable("SELECT id, name FROM Categories ORDER BY name"));
 
-        LookupLoader.LoadMultiSelect(
-            "SELECT id, name FROM Respondents ORDER BY id",
-            respondents,
-            "-- select respondent --");
+        respondents.Load(
+            LookupLoader.LoadTable("SELECT id, name FROM Respondents ORDER BY name"));
 
         LookupLoader.LoadCombo(
             "SELECT name FROM Legislation ORDER BY name",
@@ -130,18 +128,55 @@ public sealed class ClaimEntryForm : EntryFormBase
 
         LookupLoader.LoadEvidence(comboEvidence);
     }
+    public static DataTable LoadTable(string sql)
+    {
+        using var conn = new SqliteConnection(DbConfig.ConnectionString);
+        conn.Open();
+
+        using var cmd = new SqliteCommand(sql, conn);
+        using var reader = cmd.ExecuteReader();
+
+        var table = new DataTable();
+
+        // Create columns from result set
+        for (int i = 0; i < reader.FieldCount; i++)
+        {
+            table.Columns.Add(reader.GetName(i), reader.GetFieldType(i));
+        }
+
+        // Fill rows
+        while (reader.Read())
+        {
+            var row = table.NewRow();
+            for (int i = 0; i < reader.FieldCount; i++)
+            {
+                row[i] = reader.GetValue(i);
+            }
+            table.Rows.Add(row);
+        }
+
+        return table;
+    }
+
+
 
     protected override bool ValidateForm()
     {
-        //if (!categories.HasSelection ||
-        //    !respondents.HasSelection)
-        //{
-        //    MessageBox.Show("Select at least one Category and Respondent.");
-        //    return false;
-        //}
+        if (!categories.HasSelection || !respondents.HasSelection)
+        {
+            MessageBox.Show("At least one Category and Respondent is required.");
+            return false;
+        }
+
+        if (comboLegislation.SelectedIndex < 0)
+        {
+            MessageBox.Show("Legislation must be selected.");
+            return false;
+        }
 
         return true;
     }
+
 
     protected override void Save()
     {
@@ -157,9 +192,14 @@ public sealed class ClaimEntryForm : EntryFormBase
             ($p, $c, $l, $r, $e, $eid, $ep, $el);";
 
         cmd.Parameters.AddWithValue("$p", txtPoint.Text.Trim());
-        cmd.Parameters.AddWithValue("$c", categories.ToCodeString());
+        cmd.Parameters.AddWithValue(
+                "$c",
+        string.Join(",", categories.SelectedIds));
         cmd.Parameters.AddWithValue("$l", comboLegislation.SelectedItem?.ToString() ?? (object)DBNull.Value);
-        cmd.Parameters.AddWithValue("$r", respondents.ToCodeString());
+        cmd.Parameters.AddWithValue(
+            "$r",
+            string.Join(",", respondents.SelectedIds));
+
         cmd.Parameters.AddWithValue("$e", trackEvidence.Value);
         cmd.Parameters.AddWithValue(
             "$eid",
