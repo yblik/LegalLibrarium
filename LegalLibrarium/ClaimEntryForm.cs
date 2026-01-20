@@ -6,7 +6,6 @@ public sealed class ClaimEntryForm : EntryFormBase
 {
     private TextBox txtPoint;
 
-    private MultiSelectCombo types;
     private MultiSelectCombo categories;
     private MultiSelectCombo respondents;
 
@@ -38,7 +37,6 @@ public sealed class ClaimEntryForm : EntryFormBase
         txtPoint = new TextBox { Left = 150, Top = Y - 22, Width = 500 };
         Controls.Add(txtPoint);
 
-        //types = new MultiSelectCombo(this, "Types:", NextRow());
         categories = new MultiSelectCombo(this, "Categories:", NextRow());
         respondents = new MultiSelectCombo(this, "Respondents:", NextRow());
 
@@ -116,11 +114,6 @@ public sealed class ClaimEntryForm : EntryFormBase
 
     protected override void LoadData()
     {
-        //LookupLoader.LoadMultiSelect(
-        //    "SELECT id, name FROM Types ORDER BY id",
-        //    types,
-        //    "-- select type --");
-
         LookupLoader.LoadMultiSelect(
             "SELECT id, name FROM Categories ORDER BY id",
             categories,
@@ -140,12 +133,12 @@ public sealed class ClaimEntryForm : EntryFormBase
 
     protected override bool ValidateForm()
     {
-        if (!categories.HasSelection ||
-            !respondents.HasSelection)
-        {
-            MessageBox.Show("Select at least one Point, Category, and Respondent.");
-            return false;
-        }
+        //if (!categories.HasSelection ||
+        //    !respondents.HasSelection)
+        //{
+        //    MessageBox.Show("Select at least one Category and Respondent.");
+        //    return false;
+        //}
 
         return true;
     }
@@ -158,20 +151,19 @@ public sealed class ClaimEntryForm : EntryFormBase
         using var cmd = conn.CreateCommand();
         cmd.CommandText = @"
             INSERT INTO Claims
-            (point, type, category, legislation, respondent,
+            (point, category, legislation, respondent,
              evidence_rating, evidence_id, evidence_page, evidence_location_text)
             VALUES
-            ($p, $t, $c, $l, $r, $e, $eid, $ep, $el);";
+            ($p, $c, $l, $r, $e, $eid, $ep, $el);";
 
         cmd.Parameters.AddWithValue("$p", txtPoint.Text.Trim());
-        cmd.Parameters.AddWithValue("$t", types.ToCodeString());
         cmd.Parameters.AddWithValue("$c", categories.ToCodeString());
-        cmd.Parameters.AddWithValue("$l", comboLegislation.SelectedItem?.ToString());
+        cmd.Parameters.AddWithValue("$l", comboLegislation.SelectedItem?.ToString() ?? (object)DBNull.Value);
         cmd.Parameters.AddWithValue("$r", respondents.ToCodeString());
         cmd.Parameters.AddWithValue("$e", trackEvidence.Value);
         cmd.Parameters.AddWithValue(
             "$eid",
-            comboEvidence.SelectedItem is EvidenceItem ev ? ev.Id : DBNull.Value);
+            comboEvidence.SelectedItem is EvidenceItem ev ? (object)ev.Id : DBNull.Value);
         cmd.Parameters.AddWithValue("$ep", numEvidencePage.Value);
         cmd.Parameters.AddWithValue("$el", txtEvidenceLocation.Text.Trim());
 

@@ -27,7 +27,6 @@ public sealed class MultiSelectCombo
             Width = 400,
             DropDownStyle = ComboBoxStyle.DropDownList
         };
-
         combo.SelectedIndexChanged += OnSelected;
         parent.Controls.Add(combo);
     }
@@ -36,16 +35,22 @@ public sealed class MultiSelectCombo
     {
         available.Clear();
         selected.Clear();
-
         available.AddRange(values);
-
         RefreshCombo(placeholder);
     }
+
+    public void Reset()
+    {
+        // Move all selected items back to available
+        available.AddRange(selected);
+        selected.Clear();
+        RefreshCombo("-- select category --");
+    }
+
     public void LoadItems(IEnumerable<string> items, string placeholder)
     {
         Load(items.Select((name, idx) => (Id: idx, Name: name)), placeholder);
     }
-
 
     private void OnSelected(object sender, EventArgs e)
     {
@@ -58,7 +63,6 @@ public sealed class MultiSelectCombo
 
         available.Remove(match);
         selected.Add(match);
-
         RefreshCombo("-- select another --");
     }
 
@@ -86,25 +90,23 @@ public sealed class MultiSelectCombo
 
     public string ToCodeString()
     {
+        if (selected.Count == 0)
+            return string.Empty;
+
         return string.Concat(
             selected
-                .OrderBy(s => s.Name)
-                .Select((_, i) => ToAlphaCode(i))
+                .OrderBy(s => s.Id)
+                .Select(s => IdToAlpha(s.Id))
         );
     }
 
-    private static string ToAlphaCode(int index)
+    private static string IdToAlpha(int id)
     {
-        string code = "";
-        index++;
+        // ID 1 = A, ID 2 = B, ... ID 26 = Z
+        // ID 0 would be invalid for alphabetic encoding
+        if (id < 1 || id > 26)
+            throw new ArgumentOutOfRangeException(nameof(id), "ID must be between 1 and 26 for alphabetic encoding");
 
-        while (index > 0)
-        {
-            index--;
-            code = (char)('A' + (index % 26)) + code;
-            index /= 26;
-        }
-
-        return code;
+        return ((char)('A' + id - 1)).ToString();
     }
 }
