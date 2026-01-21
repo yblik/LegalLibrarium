@@ -10,9 +10,30 @@ public static class LookupLoader
     public static DataTable LoadTable(string sql)
     {
         using var conn = new SqliteConnection(DbConfig.ConnectionString);
+        conn.Open(); // ← YOU WERE MISSING THIS!
+
         using var cmd = new SqliteCommand(sql, conn);
+        using var reader = cmd.ExecuteReader();
 
         var table = new DataTable();
+
+        // Create columns from result set
+        for (int i = 0; i < reader.FieldCount; i++)
+        {
+            table.Columns.Add(reader.GetName(i), reader.GetFieldType(i));
+        }
+
+        // Fill rows with data
+        while (reader.Read())
+        {
+            var row = table.NewRow();
+            for (int i = 0; i < reader.FieldCount; i++)
+            {
+                row[i] = reader.GetValue(i);
+            }
+            table.Rows.Add(row);
+        }
+
         return table;
     }
 
@@ -34,10 +55,8 @@ public static class LookupLoader
         ComboBox combo)
     {
         combo.Items.Clear();
-
         using var conn = new SqliteConnection(DbConfig.ConnectionString);
         conn.Open();
-
         using var cmd = new SqliteCommand(sql, conn);
         using var reader = cmd.ExecuteReader();
 
@@ -54,14 +73,11 @@ public static class LookupLoader
     public static void LoadEvidence(ComboBox combo)
     {
         combo.Items.Clear();
-
         using var conn = new SqliteConnection(DbConfig.ConnectionString);
         conn.Open();
-
         using var cmd = new SqliteCommand(
             "SELECT id, title FROM Evidence ORDER BY id",
             conn);
-
         using var reader = cmd.ExecuteReader();
 
         while (reader.Read())

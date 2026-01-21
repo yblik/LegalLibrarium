@@ -25,7 +25,7 @@ public sealed class ClaimEntryForm : EntryFormBase
     {
         Text = "Claim Entry";
         Width = 700;
-        Height = 650;
+        Height = 700; // Increased to accommodate dropdowns
         StartPosition = FormStartPosition.CenterScreen;
 
         BuildUI();
@@ -39,8 +39,14 @@ public sealed class ClaimEntryForm : EntryFormBase
         Controls.Add(txtPoint);
 
         categories = new MultiSelectDropdown(this, "Categories:", NextRow());
+
+        // Add extra spacing for dropdown
+        NextRow(); NextRow(); NextRow(); NextRow();
+
         respondents = new MultiSelectDropdown(this, "Respondents:", NextRow());
 
+        // Add extra spacing for dropdown
+        NextRow(); NextRow(); NextRow(); NextRow();
 
         Controls.Add(new Label { Left = 20, Top = NextRow(), Text = "Legislation:" });
         comboLegislation = new ComboBox
@@ -128,40 +134,15 @@ public sealed class ClaimEntryForm : EntryFormBase
 
         LookupLoader.LoadEvidence(comboEvidence);
     }
-    public static DataTable LoadTable(string sql)
-    {
-        using var conn = new SqliteConnection(DbConfig.ConnectionString);
-        conn.Open();
-
-        using var cmd = new SqliteCommand(sql, conn);
-        using var reader = cmd.ExecuteReader();
-
-        var table = new DataTable();
-
-        // Create columns from result set
-        for (int i = 0; i < reader.FieldCount; i++)
-        {
-            table.Columns.Add(reader.GetName(i), reader.GetFieldType(i));
-        }
-
-        // Fill rows
-        while (reader.Read())
-        {
-            var row = table.NewRow();
-            for (int i = 0; i < reader.FieldCount; i++)
-            {
-                row[i] = reader.GetValue(i);
-            }
-            table.Rows.Add(row);
-        }
-
-        return table;
-    }
-
-
 
     protected override bool ValidateForm()
     {
+        if (string.IsNullOrWhiteSpace(txtPoint.Text))
+        {
+            MessageBox.Show("Point text is required.");
+            return false;
+        }
+
         if (!categories.HasSelection || !respondents.HasSelection)
         {
             MessageBox.Show("At least one Category and Respondent is required.");
@@ -176,7 +157,6 @@ public sealed class ClaimEntryForm : EntryFormBase
 
         return true;
     }
-
 
     protected override void Save()
     {
@@ -193,8 +173,8 @@ public sealed class ClaimEntryForm : EntryFormBase
 
         cmd.Parameters.AddWithValue("$p", txtPoint.Text.Trim());
         cmd.Parameters.AddWithValue(
-                "$c",
-        string.Join(",", categories.SelectedIds));
+            "$c",
+            string.Join(",", categories.SelectedIds));
         cmd.Parameters.AddWithValue("$l", comboLegislation.SelectedItem?.ToString() ?? (object)DBNull.Value);
         cmd.Parameters.AddWithValue(
             "$r",
@@ -218,6 +198,9 @@ public sealed class ClaimEntryForm : EntryFormBase
 
         trackEvidence.Value = 5;
         lblEvidenceValue.Text = "5";
+
+        categories.Clear();
+        respondents.Clear();
 
         LoadData();
     }

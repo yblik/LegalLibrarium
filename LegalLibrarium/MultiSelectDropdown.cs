@@ -6,11 +6,11 @@ using System.Windows.Forms;
 
 public sealed class MultiSelectDropdown
 {
-    private readonly TextBox display;
+    private readonly TextBox search;
     private readonly CheckedListBox list;
     private readonly Form host;
-
     private readonly Dictionary<string, int> map = new();
+    private DataTable sourceData;
 
     public MultiSelectDropdown(Form host, string label, int top)
     {
@@ -23,12 +23,12 @@ public sealed class MultiSelectDropdown
             Text = label
         });
 
-        display = new TextBox
+        search = new TextBox
         {
             Left = 150,
             Top = top - 4,
             Width = 400,
-            ReadOnly = true
+            PlaceholderText = "Type to search or click to select..."
         };
 
         list = new CheckedListBox
@@ -40,32 +40,90 @@ public sealed class MultiSelectDropdown
             Visible = false
         };
 
-        display.Click += (_, _) => list.Visible = !list.Visible;
-        list.ItemCheck += (_, _) => host.BeginInvoke(UpdateText);
+        search.Click += (_, _) => list.Visible = !list.Visible;
+        search.TextChanged += Search_TextChanged;
+        search.GotFocus += (_, _) => list.Visible = true;
+        list.ItemCheck += (_, _) => host.BeginInvoke(UpdateDisplay);
 
-        host.Controls.Add(display);
+        host.Controls.Add(search);
         host.Controls.Add(list);
     }
 
     public void Load(DataTable table)
     {
+        sourceData = table;
         map.Clear();
-        list.Items.Clear();
+        PopulateList("");
+    }
 
-        foreach (DataRow row in table.Rows)
+    private void Search_TextChanged(object sender, EventArgs e)
+    {
+        // If user is typing (not just showing selections), filter the list
+        if (search.Focused && !IsShowingSelections())
+        {
+            PopulateList(search.Text);
+            list.Visible = true;
+        }
+    }
+
+    private void PopulateList(string filter)
+    {
+        var checkedItems = list.CheckedItems.Cast<string>().ToHashSet();
+
+        list.Items.Clear();
+        map.Clear();
+
+        if (sourceData == null) return;
+
+        foreach (DataRow row in sourceData.Rows)
         {
             string name = row["name"].ToString();
             int id = Convert.ToInt32(row["id"]);
 
+            // Filter by search text
+            if (!string.IsNullOrWhiteSpace(filter) &&
+                !name.Contains(filter, StringComparison.OrdinalIgnoreCase))
+                continue;
+
             map[name] = id;
-            list.Items.Add(name);
+            int index = list.Items.Add(name);
+
+            // Restore checked state
+            if (checkedItems.Contains(name))
+                list.SetItemChecked(index, true);
         }
     }
 
-    private void UpdateText()
+    private void UpdateDisplay()
     {
-        display.Text = string.Join(", ",
-            list.CheckedItems.Cast<string>());
+        var selected = list.CheckedItems.Cast<string>().ToList();
+
+        if (selected.Count == 0)
+        {
+            search.Clear();
+        }
+        else
+        {
+            search.Text = string.Join(", ", selected);
+        }
+    }
+
+    private bool IsShowingSelections()
+    {
+        // Check if the current text matches the selection display format
+        return search.Text.Contains(", ") || list.CheckedItems.Count > 0;
+    }
+
+    public void Clear()
+    {
+        // Uncheck all items
+        for (int i = 0; i < list.Items.Count; i++)
+            list.SetItemChecked(i, false);
+
+        // Clear search and reload full list
+        search.Clear();
+        if (sourceData != null)
+            PopulateList("");
     }
 
     public IReadOnlyList<int> SelectedIds =>
