@@ -10,7 +10,7 @@ public sealed class ClaimEntryForm : EntryFormBase
     private MultiSelectDropdown categories;
     private MultiSelectDropdown respondents;
 
-    private ComboBox comboLegislation;
+    private MultiSelectDropdown legislation;
     private ComboBox comboEvidence;
 
     private TrackBar trackEvidence;
@@ -24,8 +24,8 @@ public sealed class ClaimEntryForm : EntryFormBase
     public ClaimEntryForm()
     {
         Text = "Claim Entry";
-        Width = 700;
-        Height = 700; // Increased to accommodate dropdowns
+        Width = 900; // Increased width
+        Height = 750; // Increased height
         StartPosition = FormStartPosition.CenterScreen;
 
         BuildUI();
@@ -35,7 +35,7 @@ public sealed class ClaimEntryForm : EntryFormBase
     protected override void BuildUI()
     {
         Controls.Add(new Label { Left = 20, Top = NextRow(), Text = "Point:" });
-        txtPoint = new TextBox { Left = 150, Top = Y - 22, Width = 500 };
+        txtPoint = new TextBox { Left = 150, Top = Y - 22, Width = 700 };
         Controls.Add(txtPoint);
 
         categories = new MultiSelectDropdown(this, "Categories:", NextRow());
@@ -48,15 +48,10 @@ public sealed class ClaimEntryForm : EntryFormBase
         // Add extra spacing for dropdown
         NextRow(); NextRow(); NextRow(); NextRow();
 
-        Controls.Add(new Label { Left = 20, Top = NextRow(), Text = "Legislation:" });
-        comboLegislation = new ComboBox
-        {
-            Left = 150,
-            Top = Y - 22,
-            Width = 300,
-            DropDownStyle = ComboBoxStyle.DropDownList
-        };
-        Controls.Add(comboLegislation);
+        legislation = new MultiSelectDropdown(this, "Legislation:", NextRow());
+
+        // Add extra spacing for dropdown
+        NextRow(); NextRow(); NextRow(); NextRow();
 
         Controls.Add(new Label { Left = 20, Top = NextRow(), Text = "Evidence rating:" });
         trackEvidence = new TrackBar
@@ -86,7 +81,7 @@ public sealed class ClaimEntryForm : EntryFormBase
         {
             Left = 150,
             Top = Y - 22,
-            Width = 400,
+            Width = 600,
             DropDownStyle = ComboBoxStyle.DropDownList
         };
         Controls.Add(comboEvidence);
@@ -105,7 +100,7 @@ public sealed class ClaimEntryForm : EntryFormBase
         {
             Left = 150,
             Top = Y - 22,
-            Width = 400
+            Width = 600
         };
         Controls.Add(txtEvidenceLocation);
 
@@ -128,9 +123,8 @@ public sealed class ClaimEntryForm : EntryFormBase
         respondents.Load(
             LookupLoader.LoadTable("SELECT id, name FROM Respondents ORDER BY name"));
 
-        LookupLoader.LoadCombo(
-            "SELECT name FROM Legislation ORDER BY name",
-            comboLegislation);
+        legislation.Load(
+            LookupLoader.LoadTable("SELECT id, name FROM Legislation ORDER BY name"));
 
         LookupLoader.LoadEvidence(comboEvidence);
     }
@@ -143,15 +137,21 @@ public sealed class ClaimEntryForm : EntryFormBase
             return false;
         }
 
-        if (!categories.HasSelection || !respondents.HasSelection)
+        if (!categories.HasSelection)
         {
-            MessageBox.Show("At least one Category and Respondent is required.");
+            MessageBox.Show("At least one Category is required.");
             return false;
         }
 
-        if (comboLegislation.SelectedIndex < 0)
+        if (!respondents.HasSelection)
         {
-            MessageBox.Show("Legislation must be selected.");
+            MessageBox.Show("At least one Respondent is required.");
+            return false;
+        }
+
+        if (!legislation.HasSelection)
+        {
+            MessageBox.Show("At least one Legislation is required.");
             return false;
         }
 
@@ -175,7 +175,9 @@ public sealed class ClaimEntryForm : EntryFormBase
         cmd.Parameters.AddWithValue(
             "$c",
             string.Join(",", categories.SelectedIds));
-        cmd.Parameters.AddWithValue("$l", comboLegislation.SelectedItem?.ToString() ?? (object)DBNull.Value);
+        cmd.Parameters.AddWithValue(
+            "$l",
+            string.Join(",", legislation.SelectedIds));
         cmd.Parameters.AddWithValue(
             "$r",
             string.Join(",", respondents.SelectedIds));
@@ -201,6 +203,7 @@ public sealed class ClaimEntryForm : EntryFormBase
 
         categories.Clear();
         respondents.Clear();
+        legislation.Clear();
 
         LoadData();
     }

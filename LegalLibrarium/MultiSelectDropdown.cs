@@ -27,7 +27,7 @@ public sealed class MultiSelectDropdown
         {
             Left = 150,
             Top = top - 4,
-            Width = 400,
+            Width = 600,
             PlaceholderText = "Type to search or click to select..."
         };
 
@@ -35,7 +35,7 @@ public sealed class MultiSelectDropdown
         {
             Left = 150,
             Top = top + 22,
-            Width = 400,
+            Width = 600,
             Height = 120,
             Visible = false
         };
