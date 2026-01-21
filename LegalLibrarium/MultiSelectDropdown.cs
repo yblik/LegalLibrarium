@@ -1,16 +1,19 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
 
 public sealed class MultiSelectDropdown
 {
     private readonly TextBox search;
+    private readonly Button btnClearSearch;
     private readonly CheckedListBox list;
     private readonly Form host;
     private readonly Dictionary<string, int> map = new();
     private DataTable sourceData;
+    private bool isShowingSelections = false;
 
     public MultiSelectDropdown(Form host, string label, int top)
     {
@@ -27,9 +30,21 @@ public sealed class MultiSelectDropdown
         {
             Left = 150,
             Top = top - 4,
-            Width = 600,
+            Width = 560,
             PlaceholderText = "Type to search or click to select..."
         };
+
+        // Clear/Reset button
+        btnClearSearch = new Button
+        {
+            Left = 715,
+            Top = top - 4,
+            Width = 35,
+            Height = search.Height,
+            Text = "↻",
+            Font = new Font(search.Font.FontFamily, 10, FontStyle.Bold)
+        };
+        btnClearSearch.Click += (_, _) => ResetSearch();
 
         list = new CheckedListBox
         {
@@ -40,13 +55,36 @@ public sealed class MultiSelectDropdown
             Visible = false
         };
 
-        search.Click += (_, _) => list.Visible = !list.Visible;
+        search.Click += Search_Click;
         search.TextChanged += Search_TextChanged;
-        search.GotFocus += (_, _) => list.Visible = true;
+        search.Enter += (_, _) =>
+        {
+            if (isShowingSelections)
+                ResetSearch();
+        };
         list.ItemCheck += (_, _) => host.BeginInvoke(UpdateDisplay);
 
         host.Controls.Add(search);
+        host.Controls.Add(btnClearSearch);
         host.Controls.Add(list);
+    }
+
+    private void Search_Click(object sender, EventArgs e)
+    {
+        if (isShowingSelections)
+            ResetSearch();
+        else
+            list.Visible = !list.Visible;
+    }
+
+    private void ResetSearch()
+    {
+        isShowingSelections = false;
+        search.Clear();
+        search.ForeColor = SystemColors.WindowText;
+        PopulateList("");
+        list.Visible = true;
+        search.Focus();
     }
 
     public void Load(DataTable table)
@@ -58,8 +96,8 @@ public sealed class MultiSelectDropdown
 
     private void Search_TextChanged(object sender, EventArgs e)
     {
-        // If user is typing (not just showing selections), filter the list
-        if (search.Focused && !IsShowingSelections())
+        // Only filter if we're in search mode (not showing selections)
+        if (!isShowingSelections && search.Focused)
         {
             PopulateList(search.Text);
             list.Visible = true;
@@ -100,18 +138,16 @@ public sealed class MultiSelectDropdown
 
         if (selected.Count == 0)
         {
+            isShowingSelections = false;
             search.Clear();
+            search.ForeColor = SystemColors.WindowText;
         }
         else
         {
+            isShowingSelections = true;
             search.Text = string.Join(", ", selected);
+            search.ForeColor = SystemColors.GrayText;
         }
-    }
-
-    private bool IsShowingSelections()
-    {
-        // Check if the current text matches the selection display format
-        return search.Text.Contains(", ") || list.CheckedItems.Count > 0;
     }
 
     public void Clear()
@@ -120,8 +156,12 @@ public sealed class MultiSelectDropdown
         for (int i = 0; i < list.Items.Count; i++)
             list.SetItemChecked(i, false);
 
-        // Clear search and reload full list
+        // Reset to search mode
+        isShowingSelections = false;
         search.Clear();
+        search.ForeColor = SystemColors.WindowText;
+
+        // Reload full list
         if (sourceData != null)
             PopulateList("");
     }
@@ -129,7 +169,8 @@ public sealed class MultiSelectDropdown
     public IReadOnlyList<int> SelectedIds =>
         list.CheckedItems
             .Cast<string>()
-            .Select(x => map[x])
+            .Select(x => map.ContainsKey(x) ? map[x] : 0)
+            .Where(id => id != 0)
             .ToList();
 
     public bool HasSelection => list.CheckedItems.Count > 0;
